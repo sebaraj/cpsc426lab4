@@ -70,6 +70,8 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 }
 
 func (server *KvServerImpl) removeShard(shard int) {
+	// server.shardLock.Lock()
+	// defer server.shardLock.Unlock()
 	server.locks[shard].Lock()
 	defer server.locks[shard].Unlock()
 
@@ -79,7 +81,13 @@ func (server *KvServerImpl) removeShard(shard int) {
 }
 
 func (server *KvServerImpl) addShard(shard int) {
-	server.locks[shard] = &sync.RWMutex{}
+	// server.shardLock.Lock()
+	// defer server.shardLock.Unlock()
+
+	if _, exists := server.data[shard]; !exists {
+		server.locks[shard] = &sync.RWMutex{} // but now this is a data race b/c its an unprodected access of that lock
+	}
+
 	server.locks[shard].Lock()
 	defer server.locks[shard].Unlock()
 
@@ -122,12 +130,15 @@ func (server *KvServerImpl) GetShardContents(
 	if !server.isShardHosted(shard) {
 		return nil, status.Errorf(codes.NotFound, "Shard not hosted on this server")
 	}
+	server.shardLock.RLock()
+	shardLock := server.locks[shard]
+	data := server.data[shard]
+	server.shardLock.RUnlock()
+	shardLock.RLock()
+	defer shardLock.RUnlock()
 
-	server.locks[shard].RLock()
-	defer server.locks[shard].RUnlock()
-
-	values := make([]*proto.GetShardValue, 0, len(server.data[shard]))
-	for key, entry := range server.data[shard] {
+	values := make([]*proto.GetShardValue, 0, len(data))
+	for key, entry := range data {
 		values = append(values, &proto.GetShardValue{
 			Key:            key,
 			Value:          entry.value,
@@ -190,6 +201,7 @@ func (server *KvServerImpl) Shutdown() {
 	server.cleanupTick.Stop()
 }
 
+// TODO: linked list of entries for faster cleanup?
 func (server *KvServerImpl) cleanupExpiredEntries() {
 	for {
 		select {
@@ -197,13 +209,18 @@ func (server *KvServerImpl) cleanupExpiredEntries() {
 			return
 		case <-server.cleanupTick.C:
 			now := time.Now()
-			for shard := range server.data {
+			server.shardLock.Lock()
+			data := server.data
+			server.shardLock.Unlock()
+			for shard := range data {
 				server.locks[shard].Lock()
+				server.shardLock.Lock()
 				for key, entry := range server.data[shard] {
 					if now.After(entry.expiryTime) {
 						delete(server.data[shard], key)
 					}
 				}
+				server.shardLock.Unlock()
 				server.locks[shard].Unlock()
 			}
 		}
@@ -236,10 +253,17 @@ func (server *KvServerImpl) Get(
 		return nil, status.Errorf(codes.NotFound, "Shard not hosted on this server")
 	}
 
-	server.locks[shard].RLock()
-	defer server.locks[shard].RUnlock()
+	server.shardLock.RLock()
+	shardLock := server.locks[shard]
+	data := server.data[shard]
+	server.shardLock.RUnlock()
+	shardLock.RLock()
+	defer shardLock.RUnlock()
 
-	entry, exists := server.data[shard][request.Key]
+	// server.locks[shard].RLock()
+	// defer server.locks[shard].RUnlock()
+
+	entry, exists := data[request.Key]
 	if !exists || time.Now().After(entry.expiryTime) {
 		return &proto.GetResponse{WasFound: false}, nil
 	}
@@ -267,10 +291,17 @@ func (server *KvServerImpl) Set(
 		return nil, status.Errorf(codes.NotFound, "Shard not hosted on this server")
 	}
 
-	server.locks[shard].Lock()
-	defer server.locks[shard].Unlock()
+	server.shardLock.RLock()
+	shardLock := server.locks[shard]
+	data := server.data[shard]
+	server.shardLock.RUnlock()
+	shardLock.Lock()
+	defer shardLock.Unlock()
 
-	server.data[shard][request.Key] = &entry{
+	// server.locks[shard].Lock()
+	// defer server.locks[shard].Unlock()
+
+	data[request.Key] = &entry{
 		value:      request.Value,
 		expiryTime: time.Now().Add(time.Duration(request.TtlMs) * time.Millisecond),
 	}
@@ -295,10 +326,18 @@ func (server *KvServerImpl) Delete(
 		return nil, status.Errorf(codes.NotFound, "Shard not hosted on this server")
 	}
 
+	// server.shardLock.RLock()
+	// shardLock := server.locks[shard]
+	// server.shardLock.RUnlock()
+	// shardLock.Lock()
+	// defer shardLock.Unlock()
+
+	server.shardLock.Lock()
+	defer server.shardLock.Unlock()
 	server.locks[shard].Lock()
 	defer server.locks[shard].Unlock()
 
-	delete(server.data[shard], request.Key)
+	delete(server.data[shard], request.Key) // delete itself is idempotent
 
 	return &proto.DeleteResponse{}, nil
 }
