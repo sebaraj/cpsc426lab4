@@ -167,6 +167,7 @@ func RunTtlMultiKey(t *testing.T, setup *TestSetup) {
 	time.Sleep(1200 * time.Millisecond)
 	for _, k := range keys {
 		_, wasFound, err := setup.NodeGet("n1", k)
+		// println(err)
 		assert.Nil(t, err)
 		assert.False(t, wasFound)
 	}
@@ -497,17 +498,19 @@ func TestServerTtlDataActuallyCleanedUp(t *testing.T) {
 	vals := RandomKeys(100, 1024*1024)
 	logrus.Debugf("created random data")
 	for i, k := range keys {
+		println("writing %s", i)
 		val := vals[i]
 		err := setup.NodeSet("n1", k, val, 10*time.Second)
 		assert.Nil(t, err)
 	}
 
 	for _, k := range keys {
+		println("getting %s", k)
 		_, wasFound, err := setup.NodeGet("n1", k)
 		assert.Nil(t, err)
 		assert.True(t, wasFound)
 	}
-
+	println("runtime.GC")
 	runtime.GC()
 	var startingMemory runtime.MemStats
 	runtime.ReadMemStats(&startingMemory)
@@ -538,6 +541,10 @@ func TestServerTtlDataActuallyCleanedUp(t *testing.T) {
 	assert.Less(t, uint64(80*1024*1024), memoryDiff)
 
 	setup.Shutdown()
+
+	var endingMemoryEnd runtime.MemStats
+	runtime.ReadMemStats(&endingMemoryEnd)                                               // delete
+	logrus.Debugf("memory after waiting out TTL: %dMB", endingMemoryEnd.Alloc/1024/1024) // delete
 }
 
 func TestServerSingleShardDrop(t *testing.T) {
