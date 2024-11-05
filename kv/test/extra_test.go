@@ -114,7 +114,7 @@ func TestYourTestClientEmptyKey(t *testing.T) {
 }
 
 func TestYourTestClientKeyExpiration(t *testing.T) {
-	// Tests that keys expire correctly after their TTL has passed.
+	// Tests that keys expire correctly after their TTL has passed
 	setup := MakeTestSetupWithoutServers(MakeBasicOneShard())
 	setup.clientPool.OverrideSetResponse("n1")
 
@@ -122,32 +122,34 @@ func TestYourTestClientKeyExpiration(t *testing.T) {
 	value := "tempValue"
 	ttl := 500 * time.Millisecond // Short TTL of 500ms
 
-	// Set the key with a short TTL
 	err := setup.Set(key, value, ttl)
 	assert.Nil(t, err, "Set should succeed")
-
-	// Simulate the server returning the value before expiration
 	setup.clientPool.OverrideGetResponse("n1", value, true)
-
-	// Get the key immediately
 	val, wasFound, err := setup.Get(key)
 	assert.Nil(t, err)
 	assert.True(t, wasFound)
 	assert.Equal(t, value, val, "Value should match before expiration")
-
-	// Wait for the TTL to expire
 	time.Sleep(ttl + 100*time.Millisecond)
-
-	// Simulate the server indicating the key has expired
 	setup.clientPool.OverrideGetResponse("n1", "", false)
 
-	// Attempt to Get the key after expiration
 	val, wasFound, err = setup.Get(key)
 	assert.Nil(t, err)
 	assert.False(t, wasFound, "Key should not be found after expiration")
 	assert.Equal(t, "", val, "Value should be empty after expiration")
 }
 
-// func TestYourTestIntegration(t *testing.T) {
-// 	/// 	setup.Shutdown()
-// }
+func TestYourTestServerSetNegativeTTL(t *testing.T) {
+	// Tests that setting a key with a negative TTL returns an error
+
+	setup := MakeTestSetup(MakeBasicOneShard())
+
+	err := setup.NodeSet("n1", "negativeTTLKey", "value", -10*time.Second)
+	assert.NotNil(t, err, "Expected error when setting a key with negative TTL")
+	assertErrorWithCode(t, err, codes.InvalidArgument)
+
+	_, wasFound, err := setup.NodeGet("n1", "negativeTTLKey")
+	assert.Nil(t, err, "Get operation should not return an error")
+	assert.False(t, wasFound, "Key should not be found after setting with negative TTL")
+
+	setup.Shutdown()
+}

@@ -301,6 +301,10 @@ func (server *KvServerImpl) Set(
 
 	// panic("TODO: Part A")
 
+	if request.TtlMs < 0 {
+		return nil, status.Error(codes.InvalidArgument, "TTL must be non-negative")
+	}
+
 	shard, err := server.checkShardAssignment(request.Key)
 	if err != nil {
 		return nil, err
