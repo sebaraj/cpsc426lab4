@@ -260,14 +260,15 @@ func (server *KvServerImpl) Get(
 	// Trace-level logging for node receiving this request (enable by running with -log-level=trace),
 	// feel free to use Trace() or Debug() logging in your code to help debug tests later without
 	// cluttering logs by default. See the logging section of the spec.
+	if request.Key == "" {
+		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
+	}
 	logrus.WithFields(
 		logrus.Fields{"node": server.nodeName, "key": request.Key},
 	).Trace("node received Get() request")
 
 	// panic("TODO: Part A")
-	if request.Key == "" {
-		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
-	}
+
 	shard, err := server.checkShardAssignment(request.Key)
 	if err != nil {
 		return &proto.GetResponse{Value: "", WasFound: false}, err
@@ -291,15 +292,15 @@ func (server *KvServerImpl) Set(
 	ctx context.Context,
 	request *proto.SetRequest,
 ) (*proto.SetResponse, error) {
+	if request.Key == "" {
+		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
+	}
 	logrus.WithFields(
 		logrus.Fields{"node": server.nodeName, "key": request.Key},
 	).Trace("node received Set() request")
 
 	// panic("TODO: Part A")
 
-	if request.Key == "" {
-		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
-	}
 	shard, err := server.checkShardAssignment(request.Key)
 	if err != nil {
 		return nil, err
@@ -336,15 +337,14 @@ func (server *KvServerImpl) Delete(
 	ctx context.Context,
 	request *proto.DeleteRequest,
 ) (*proto.DeleteResponse, error) {
+	if request.Key == "" {
+		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
+	}
 	logrus.WithFields(
 		logrus.Fields{"node": server.nodeName, "key": request.Key},
 	).Trace("node received Delete() request")
 
 	// panic("TODO: Part A")
-
-	if request.Key == "" {
-		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
-	}
 
 	shard, err := server.checkShardAssignment(request.Key)
 	if err != nil {
