@@ -1,6 +1,7 @@
 package kv
 
 import (
+	"container/heap"
 	"context"
 	"math/rand"
 	"sync"
@@ -13,8 +14,10 @@ import (
 )
 
 type entry struct {
+	key   string
 	value string
 	ttl   uint64
+	index int
 }
 
 type KvServerImpl struct {
@@ -32,11 +35,14 @@ type KvServerImpl struct {
 
 	hostedShards map[int]bool
 	shardLock    sync.RWMutex
+
+	heaps []EntryHeap
 }
 
 func (server *KvServerImpl) handleShardMapUpdate() {
 	// TODO: Part C
 	server.shardLock.Lock()
+	logrus.Debugf("(handleShardMapUpdate): KvServerImpl %s updating shardMap", server.nodeName)
 	updatedShards := server.shardMap.ShardsForNode(server.nodeName)
 	oldShards := server.hostedShards
 	newShards := make(map[int]bool, 0)
@@ -48,6 +54,7 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 	for shard := range newShards {
 		if !oldShards[shard] {
 			addNodes = append(addNodes, shard)
+			logrus.Debugln("(handleShardMapUpdate): Adding shard", shard)
 		}
 	}
 
@@ -55,6 +62,7 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 		shard := addNodes[i]
 		StN := server.shardMap.GetState().ShardsToNodes[shard]
 		rIdx := rand.Intn(len(StN))
+		logrus.Debugln("(handleShardMapUpdate): rIdx: ", rIdx)
 		for j := 0; j < len(StN); j++ {
 			node := StN[(rIdx+j)%len(StN)]
 			if node == server.nodeName {
@@ -62,28 +70,46 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 			}
 			client, err := server.clientPool.GetClient(node)
 			if err != nil {
+				logrus.Debugln("(handleShardMapUpdate): GetClient error: ", err)
 				continue
 			}
 			server.shardLock.Unlock()
 			newKVR, err := client.GetShardContents(context.Background(), &proto.GetShardContentsRequest{Shard: int32(shard)})
 			server.shardLock.Lock()
 			if err != nil {
+				logrus.Debugln("(handleShardMapUpdate): GetShardContents error: ", err)
 				continue
 			}
+			logrus.Debugln("(handleShardMapUpdate): acquiring lock for shard ", shard-1)
 			server.locks[shard-1].Lock()
+
+			server.data[shard-1] = make(map[string]*entry)
+			server.heaps[shard-1] = make(EntryHeap, 0)
+			heap.Init(&server.heaps[shard-1])
+
 			newKV := newKVR.Values
 			for j := 0; j < len(newKV); j++ {
 				key := newKV[j].Key
 				value := newKV[j].Value
 				ttl := uint64(newKV[j].TtlMsRemaining)
-				server.data[shard-1][key] = &entry{value: value, ttl: ttl}
+				// server.data[shard-1][key] = &entry{value: value, ttl: ttl}
+				newEntry := &entry{
+					key:   key,
+					value: value,
+					ttl:   ttl,
+				}
+				server.data[shard-1][key] = newEntry
+				heap.Push(&server.heaps[shard-1], newEntry)
+				logrus.Debugln("(handleShardMapUpdate): Adding key ", key, " to shard ", shard, " with value ", value, " and ttl ", ttl)
 			}
+			logrus.Debugln("(handleShardMapUpdate): releasing lock for shard ", shard-1)
 			server.locks[shard-1].Unlock()
 		}
 
 	}
 
 	server.hostedShards = newShards
+	logrus.Debugln("(handleShardMapUpdate): releasing shardLock")
 	server.shardLock.Unlock()
 	deleteNodes := make([]int, 0)
 	for shard := range oldShards {
@@ -91,17 +117,24 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 			deleteNodes = append(deleteNodes, shard)
 		}
 	}
+	logrus.Debugln("(handleShardMapUpdate): deleting old shards...")
 	for i := 0; i < len(deleteNodes); i++ {
 		shard := deleteNodes[i]
 		server.locks[shard-1].Lock()
-		for i := range server.data[shard-1] {
-			key := GetShardForKey(i, server.shardMap.NumShards())
-			if key == shard {
-				delete(server.data[shard-1], i)
-			}
-		}
+		// Clear the data map for the shard
+		server.data[shard-1] = make(map[string]*entry)
+		// Clear and reinitialize the heap for the shard
+		server.heaps[shard-1] = make(EntryHeap, 0)
+		heap.Init(&server.heaps[shard-1])
+		// for i := range server.data[shard-1] {
+		// shard2 := GetShardForKey(i, server.shardMap.NumShards())
+		// if shard2 == shard {
+		// delete(server.data[shard-1], i)
+		// }
+		// }
 		server.locks[shard-1].Unlock()
 	}
+	logrus.Debugln("(handleShardMapUpdate): deleted old shards; updated complete")
 }
 
 func (server *KvServerImpl) shardMapListenLoop() {
@@ -120,18 +153,51 @@ func (server *KvServerImpl) Clean() {
 	for {
 		select {
 		case <-server.shutdown:
+			logrus.Debugln("(Clean): Acquiring lock to clean server")
+			server.shardLock.Lock()
+			server.cleanupTick.Stop()
+			logrus.Debugln("(Clean): Wiping server data")
+			for i := range server.data {
+				server.locks[i].Lock()
+				for k := range server.data[i] {
+					delete(server.data[i], k)
+				}
+				server.data[i] = nil
+				server.locks[i].Unlock()
+			}
+			// server.data = nil
+			// server.locks = nil
+			// server.hostedShards = nil
+			logrus.Debugln("(Clean): Wiped server data; releasing lock")
+			server.shardLock.Unlock()
 			return
 		case <-server.cleanupTick.C:
 			server.shardLock.Lock()
 			for i := 0; i < len(server.data); i++ {
+				current := uint64(time.Now().UnixMilli())
 				server.locks[i].Lock()
-				for key, value := range server.data[i] {
-					// println(value.ttl)
-					// println(uint64(time.Now().UnixMilli()))
-					if value.ttl < uint64(time.Now().UnixMilli()) {
-						delete(server.data[i], key)
+				h := &server.heaps[i]
+				for h.Len() > 0 {
+					entry := (*h)[0] // Peek at the top of the heap
+					if entry.ttl > current {
+						// The earliest ttl is in the future, stop cleaning
+						break
 					}
+					// Remove from heap
+					heap.Pop(h)
+					// Remove from map
+					delete(server.data[i], entry.key)
+					logrus.Debugln("(Clean): Deleted expired key", entry.key, "from shard", i+1)
 				}
+				// for key, value := range server.data[i] {
+				// 	// println(value.ttl)
+				// 	// println)
+				// 	current := uint64(time.Now().UnixMilli())
+				// 	if value.ttl < current {
+				// 		logrus.Debugln("(Clean): Deleting key ", key, " with ttl ", value.ttl, " from shard ", i, " at time ", current)
+				// 		delete(server.data[i], key)
+				// 	}
+				// }
 				server.locks[i].Unlock()
 			}
 			server.shardLock.Unlock()
@@ -152,10 +218,13 @@ func MakeKvServer(nodeName string, shardMap *ShardMap, clientPool ClientPool) *K
 		locks:       make([]sync.RWMutex, shardMap.NumShards()),
 		cleanupTick: time.NewTicker(1 * time.Second),
 		shardLock:   sync.RWMutex{},
+		heaps:       make([]EntryHeap, shardMap.NumShards()),
 	}
 
 	for i := 0; i < len(server.data); i++ {
 		server.data[i] = make(map[string]*entry)
+		server.heaps[i] = make(EntryHeap, 0)
+		heap.Init(&server.heaps[i])
 	}
 	go server.shardMapListenLoop()
 	server.handleShardMapUpdate()
@@ -166,15 +235,6 @@ func MakeKvServer(nodeName string, shardMap *ShardMap, clientPool ClientPool) *K
 func (server *KvServerImpl) Shutdown() {
 	server.shutdown <- struct{}{}
 	server.listener.Close()
-	server.shardLock.Lock()
-	for i := 0; i < len(server.data); i++ {
-		server.locks[i].Lock()
-		for key := range server.data[i] {
-			delete(server.data[i], key)
-		}
-		server.locks[i].Unlock()
-	}
-	server.shardLock.Unlock()
 }
 
 // NOTE: CALL WITHOUT HOLDING LOCK - input is shard, not key
@@ -184,6 +244,7 @@ func (server *KvServerImpl) isShardHosted(shard int) bool {
 	return server.hostedShards[shard]
 }
 
+// NOTE: CALL WITHOUT HOLDING LOCK - input is key, not shard
 func (server *KvServerImpl) checkShardAssignment(key string) (int, error) {
 	shard := GetShardForKey(key, server.shardMap.NumShards())
 	if !server.isShardHosted(shard) {
@@ -246,10 +307,26 @@ func (server *KvServerImpl) Set(
 
 	server.locks[shard-1].Lock()
 	defer server.locks[shard-1].Unlock()
+	entry2, exists := server.data[shard-1][request.Key]
+	newTTL := uint64(time.Now().UnixMilli()) + uint64(request.TtlMs)
 
-	server.data[shard-1][request.Key] = &entry{
-		value: request.Value,
-		ttl:   uint64(time.Now().UnixMilli()) + uint64(request.TtlMs),
+	if exists {
+		// Remove the old entry from the heap
+		heap.Remove(&server.heaps[shard-1], entry2.index)
+		// Update the entry
+		entry2.value = request.Value
+		entry2.ttl = newTTL
+		// Re-insert into the heap
+		heap.Push(&server.heaps[shard-1], entry2)
+	} else {
+		// Create a new entry
+		entry2 = &entry{
+			key:   request.Key,
+			value: request.Value,
+			ttl:   newTTL,
+		}
+		server.data[shard-1][request.Key] = entry2
+		heap.Push(&server.heaps[shard-1], entry2)
 	}
 
 	return &proto.SetResponse{}, nil
@@ -277,7 +354,15 @@ func (server *KvServerImpl) Delete(
 	server.locks[shard-1].Lock()
 	defer server.locks[shard-1].Unlock()
 
-	delete(server.data[shard-1], request.Key)
+	entry, exists := server.data[shard-1][request.Key]
+	if exists {
+		// Remove entry from heap
+		heap.Remove(&server.heaps[shard-1], entry.index)
+		// Remove from map
+		delete(server.data[shard-1], request.Key)
+	}
+
+	// delete(server.data[shard-1], request.Key)
 
 	return &proto.DeleteResponse{}, nil
 }
