@@ -33,12 +33,13 @@ func (kv *Kv) Get(ctx context.Context, key string) (string, bool, error) {
 	if len(nodes) == 0 {
 		return "", false, errors.New("no nodes available for shard")
 	}
-
+	var lastErr error
 	for i := 0; i < len(nodes); i++ {
 		node := kv.getNextNode(shard, nodes)
 		client, err := kv.clientPool.GetClient(node)
 		if err != nil {
 			// try another node
+			lastErr = err
 			continue
 		}
 
@@ -46,10 +47,12 @@ func (kv *Kv) Get(ctx context.Context, key string) (string, bool, error) {
 		if err == nil {
 			// return the first successful response from any node
 			return response.Value, response.WasFound, nil
+		} else {
+			lastErr = err
 		}
 	}
 
-	return "", false, errors.New("all nodes failed")
+	return "", false, lastErr // propagate the last error
 }
 
 func (kv *Kv) Set(ctx context.Context, key string, value string, ttl time.Duration) error {
@@ -61,8 +64,9 @@ func (kv *Kv) Set(ctx context.Context, key string, value string, ttl time.Durati
 	}
 
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(nodes))
+	errChan := make(chan error, len(nodes)+1)
 
+	// NOTE: do we need to ensure data consistency across nodes?
 	for _, node := range nodes {
 		wg.Add(1)
 		go func(nodeName string) {
@@ -100,7 +104,7 @@ func (kv *Kv) Delete(ctx context.Context, key string) error {
 	}
 
 	var wg sync.WaitGroup
-	errChan := make(chan error, len(nodes))
+	errChan := make(chan error, len(nodes)+1)
 
 	for _, node := range nodes {
 		wg.Add(1)

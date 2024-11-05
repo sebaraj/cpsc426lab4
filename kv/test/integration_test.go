@@ -48,6 +48,7 @@ func TestIntegrationConcurrentGetsAndSets(t *testing.T) {
 	for i := 0; i < numGoros; i++ {
 		go func(i int) {
 			for j := 0; j < numIters; j++ {
+				logrus.Debugf("Setting key: %d on goroutine %d", (i*100+j)%179, i)
 				err := setup.Set(keys[(i*100+j)%179], vals[(j*100+i)%179], 100*time.Second)
 				assert.Nil(t, err)
 				for k := 0; k < 200; k++ {
