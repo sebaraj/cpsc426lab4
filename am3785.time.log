@@ -3,12 +3,31 @@ ESTIMATE of time to complete assignment: 20 hours
        Time     Time
 Date   Started  Spent  Work Completed
 -----  -------  -----  --------------
+10/26  03:00PM  03:00  • Read through codebase and readme
+                       • Implemented basic client logic for Get, Set, and Delete ops
+10/27  10:00AM  03:30  • Server-side data structure for key-value storage
+                       • Implement cleanup and update mechanism
+                       • Implemented shard mapping and request routing logic
+                       • Added load balancing strategy for server operations
+                       • Implemented global node and local shard locking logic (but got into a race)
+10/27  07:00PM  02:30  • Debugged the locking; passed Part A & B
+11/04  05:00PM  00:30  • Still got a race on Part C, tried to resolve after logging.
+11/05  11:00PM  00:30  • Updated bws26.time.log & discussions.md (added an Exp 2 & 3)
 
                 -----
-                00:00  TOTAL time spent
+                10:00  TOTAL time spent
 
 I discussed my solution with: Bryan SebaRaj
 
-DISCUSSION:
-
-
+DISCUSSION: Initial approach was to explore what the pset provides 
+and get immediately into a statefulness of the application with sharding. 
+Working on the client and server implementations concurrently allowed for 
+better integration testing and understanding of the system as a whole. 
+However, as I delved deeper into the implementation, I encountered 
+significant challenges, particularly in managing deadlocks and data races. 
+The process of debugging these issues proved to be a delicate balancing 
+act and better to be well through ahead of time in a big picture. 
+Reflecting on this process, I realized the importance of having a clear 
+mental model before diving into implementation, especially for complex 
+distributed systems. I agree on Bryan's point of view and will try to
+collaborate more precisely on the final project.
