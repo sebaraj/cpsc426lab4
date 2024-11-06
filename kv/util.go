@@ -15,27 +15,38 @@ func GetShardForKey(key string, numShards int) int {
 
 type EntryHeap []*entry
 
-func (h EntryHeap) Len() int           { return len(h) }
-func (h EntryHeap) Less(i, j int) bool { return h[i].ttl < h[j].ttl }
-func (h EntryHeap) Swap(i, j int) {
-	h[i], h[j] = h[j], h[i]
-	h[i].index = i
-	h[j].index = j
+func (h *EntryHeap) Len() int {
+	return len(*h)
+}
+
+func (h *EntryHeap) Less(i, j int) bool {
+	return (*h)[i].ttl < (*h)[j].ttl
+}
+
+func (h *EntryHeap) Swap(i, j int) {
+	(*h)[i], (*h)[j] = (*h)[j], (*h)[i]
+	// Update the index fields
+	(*h)[i].index = i
+	(*h)[j].index = j
 }
 
 func (h *EntryHeap) Push(x interface{}) {
-	n := len(*h)
 	entry := x.(*entry)
-	entry.index = n
+	// Append the new entry and set its index
+	entry.index = len(*h)
 	*h = append(*h, entry)
 }
 
 func (h *EntryHeap) Pop() interface{} {
 	old := *h
 	n := len(old)
+	// Get the last entry
 	entry := old[n-1]
-	old[n-1] = nil    // avoid memory leak
-	entry.index = -1  // for safety
-	*h = old[0 : n-1] // shrink slice
+	// Remove reference to avoid memory leak
+	old[n-1] = nil
+	// Update the heap slice
+	*h = old[0 : n-1]
+	// Invalidate the index
+	entry.index = -1
 	return entry
 }

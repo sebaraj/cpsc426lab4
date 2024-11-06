@@ -43,6 +43,7 @@ func MakeTestSetup(shardMap kv.ShardMapState) *TestSetup {
 	).Debug("created test setup with servers")
 	return &setup
 }
+
 func MakeTestSetupWithoutServers(shardMap kv.ShardMapState) *TestSetup {
 	// Remove nodes so we never have a chance of sending data
 	// to the KvServerImpl attached as a safety measure for client_test.go
@@ -76,6 +77,7 @@ func (ts *TestSetup) NodeGet(nodeName string, key string) (string, bool, error) 
 	}
 	return response.Value, response.WasFound, nil
 }
+
 func (ts *TestSetup) NodeSet(nodeName string, key string, value string, ttl time.Duration) error {
 	_, err := ts.nodes[nodeName].Set(
 		context.Background(),
@@ -83,6 +85,7 @@ func (ts *TestSetup) NodeSet(nodeName string, key string, value string, ttl time
 	)
 	return err
 }
+
 func (ts *TestSetup) NodeDelete(nodeName string, key string) error {
 	_, err := ts.nodes[nodeName].Delete(context.Background(), &proto.DeleteRequest{Key: key})
 	return err
@@ -91,9 +94,11 @@ func (ts *TestSetup) NodeDelete(nodeName string, key string) error {
 func (ts *TestSetup) Get(key string) (string, bool, error) {
 	return ts.kv.Get(ts.ctx, key)
 }
+
 func (ts *TestSetup) Set(key string, value string, ttl time.Duration) error {
 	return ts.kv.Set(ts.ctx, key, value, ttl)
 }
+
 func (ts *TestSetup) Delete(key string) error {
 	return ts.kv.Delete(ts.ctx, key)
 }
@@ -171,6 +176,7 @@ func copyShardMapState(src *kv.ShardMapState) kv.ShardMapState {
 		ShardsToNodes: copiedShardsToNodes,
 	}
 }
+
 func (ts *TestSetup) getShardMapStateCopy() kv.ShardMapState {
 	return copyShardMapState(ts.shardMap.GetState())
 }
@@ -489,7 +495,6 @@ func MakeTwoNodeBothAssignedSingleShard() kv.ShardMapState {
 			1: {"n1", "n2"},
 		},
 	}
-
 }
 
 func MakeTwoNodeMultiShard() kv.ShardMapState {

@@ -2,7 +2,9 @@ package kvtest
 
 import (
 	"fmt"
+	// "os"
 	"runtime"
+	// "runtime/pprof"
 	"strings"
 	"sync"
 	"testing"
@@ -383,12 +385,28 @@ func TestServerConcurrentGetsAndSets(t *testing.T) {
 	RunTestWith(t, RunConcurrentGetsAndSets, MakeTestSetup(MakeBasicOneShard()))
 }
 
+// func writeHeapProfile(filename string) {
+// 	f, err := os.Create(filename)
+// 	if err != nil {
+// 		logrus.Fatal("could not create memory profile: ", err)
+// 	}
+// 	defer f.Close()
+// 	runtime.GC() // get up-to-date statistics
+// 	if err := pprof.WriteHeapProfile(f); err != nil {
+// 		logrus.Fatal("could not write memory profile: ", err)
+// 	}
+// }
+
 func TestServerMultiShardSingleNode(t *testing.T) {
 	// Runs all the basic tests on a single node setup,
 	// but with multiple shards assigned. This shouldn't
 	// be functionally much different from a single node
 	// with a single shard, but may stress cases if you store
 	// data for different shards in separate storage.
+	// var baselineMemory runtime.MemStats
+	// runtime.ReadMemStats(&baselineMemory)
+	// println("baseline memory usage: ", baselineMemory.Alloc/1024/1024)
+
 	setup := MakeTestSetup(MakeMultiShardSingleNode())
 	t.Run("basic", func(t *testing.T) {
 		RunBasic(t, setup)
@@ -409,6 +427,9 @@ func TestServerMultiShardSingleNode(t *testing.T) {
 		RunConcurrentGetsAndSets(t, setup)
 	})
 	setup.Shutdown()
+	// var endMemory runtime.MemStats
+	// runtime.ReadMemStats(&endMemory)
+	// println("baseline memory usage: ", endMemory.Alloc/1024/1024)
 }
 
 func assertErrorWithCode(t *testing.T, err error, code codes.Code) {
@@ -444,6 +465,7 @@ func TestServerRejectWithoutShardAssignmentMultiShard(t *testing.T) {
 	// Similary, your service should function even if only some of
 	// the shards are assigned to a server. In this case, half of the
 	// shards are assigned and half are entirely unassigned.
+	// writeHeapProfile("before_cleanup.prof")
 	setup := MakeTestSetup(MakeSingleNodeHalfShardsAssigned())
 
 	keys := RandomKeys(100, 5)
@@ -470,6 +492,7 @@ func TestServerRejectWithoutShardAssignmentMultiShard(t *testing.T) {
 	assert.Greater(t, 80, wasAssigned)
 
 	setup.Shutdown()
+	// writeHeapProfile("after_cleanup.prof")
 }
 
 func TestServerTtlDataActuallyCleanedUp(t *testing.T) {
@@ -493,24 +516,28 @@ func TestServerTtlDataActuallyCleanedUp(t *testing.T) {
 	var baselineMemory runtime.MemStats
 	runtime.ReadMemStats(&baselineMemory)
 	logrus.Debugf("baseline memory usage: %dMB", baselineMemory.Alloc/1024/1024)
+	// println("baseline memory usage: ", baselineMemory.Alloc/1024/1024, " MB")
 
 	keys := RandomKeys(100, 10)
+	// println("created random keys")
+	// println("creating random vals")
 	vals := RandomKeys(100, 1024*1024)
+	// println("created random vals")
 	logrus.Debugf("created random data")
 	for i, k := range keys {
-		println("writing %s", i)
+		// println("writing %s", i)
 		val := vals[i]
 		err := setup.NodeSet("n1", k, val, 10*time.Second)
 		assert.Nil(t, err)
 	}
 
 	for _, k := range keys {
-		println("getting %s", k)
+		// println("getting %s", k)
 		_, wasFound, err := setup.NodeGet("n1", k)
 		assert.Nil(t, err)
 		assert.True(t, wasFound)
 	}
-	println("runtime.GC")
+	// println("runtime.GC")
 	runtime.GC()
 	var startingMemory runtime.MemStats
 	runtime.ReadMemStats(&startingMemory)
@@ -519,6 +546,7 @@ func TestServerTtlDataActuallyCleanedUp(t *testing.T) {
 		"memory usage after setting 100MB worth of data: %dMB",
 		startingMemory.Alloc/1024/1024,
 	)
+	// println("memory usage after setting 100MB worth of data: ", startingMemory.Alloc/1024/1024, " MB")
 
 	for i := 0; i < 10; i++ {
 		for _, k := range keys {
@@ -536,15 +564,17 @@ func TestServerTtlDataActuallyCleanedUp(t *testing.T) {
 	runtime.ReadMemStats(&endingMemory)
 	memoryDiff := startingMemory.Alloc - endingMemory.Alloc
 	logrus.Debugf("memory after waiting out TTL: %dMB", endingMemory.Alloc/1024/1024)
+	// println("memory after waiting out TTL: ", endingMemory.Alloc/1024/1024, " MB")
 	assert.Greater(t, startingMemory.Alloc, endingMemory.Alloc)
 	// Expect a difference of at least 80MB -- cleaning up at least 80% of the 100MB set
 	assert.Less(t, uint64(80*1024*1024), memoryDiff)
 
 	setup.Shutdown()
 
-	var endingMemoryEnd runtime.MemStats
-	runtime.ReadMemStats(&endingMemoryEnd)                                               // delete
-	logrus.Debugf("memory after waiting out TTL: %dMB", endingMemoryEnd.Alloc/1024/1024) // delete
+	// var endingMemoryEnd runtime.MemStats
+	// runtime.ReadMemStats(&endingMemoryEnd)                                               // delete
+	// logrus.Debugf("memory after waiting out TTL: %dMB", endingMemoryEnd.Alloc/1024/1024) // delete
+	// println("memory after waiting out TTL: ", endingMemoryEnd.Alloc/1024/1024, " MB")    // delete
 }
 
 func TestServerSingleShardDrop(t *testing.T) {

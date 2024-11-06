@@ -63,6 +63,7 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 		StN := server.shardMap.GetState().ShardsToNodes[shard]
 		rIdx := rand.Intn(len(StN))
 		logrus.Debugln("(handleShardMapUpdate): rIdx: ", rIdx)
+		lastErr := false
 		for j := 0; j < len(StN); j++ {
 			node := StN[(rIdx+j)%len(StN)]
 			if node == server.nodeName {
@@ -103,6 +104,14 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 				logrus.Debugln("(handleShardMapUpdate): Adding key ", key, " to shard ", shard, " with value ", value, " and ttl ", ttl)
 			}
 			logrus.Debugln("(handleShardMapUpdate): releasing lock for shard ", shard-1)
+			server.locks[shard-1].Unlock()
+			lastErr = true
+		}
+		if !lastErr {
+			server.locks[shard-1].Lock()
+			server.data[shard-1] = make(map[string]*entry)
+			server.heaps[shard-1] = make(EntryHeap, 0)
+			heap.Init(&server.heaps[shard-1])
 			server.locks[shard-1].Unlock()
 		}
 
@@ -159,17 +168,24 @@ func (server *KvServerImpl) Clean() {
 			logrus.Debugln("(Clean): Wiping server data")
 			for i := range server.data {
 				server.locks[i].Lock()
+				server.heaps[i] = nil
+
 				for k := range server.data[i] {
 					delete(server.data[i], k)
 				}
 				server.data[i] = nil
+
 				server.locks[i].Unlock()
 			}
-			// server.data = nil
-			// server.locks = nil
+			server.data = nil
 			// server.hostedShards = nil
 			logrus.Debugln("(Clean): Wiped server data; releasing lock")
 			server.shardLock.Unlock()
+
+			// server.heaps = nil
+			// server.locks = nil
+			time.Sleep(1 * time.Second)
+			server.locks = nil
 			return
 		case <-server.cleanupTick.C:
 			server.shardLock.Lock()
@@ -183,6 +199,7 @@ func (server *KvServerImpl) Clean() {
 						// The earliest ttl is in the future, stop cleaning
 						break
 					}
+
 					// Remove from heap
 					heap.Pop(h)
 					// Remove from map
@@ -216,16 +233,16 @@ func MakeKvServer(nodeName string, shardMap *ShardMap, clientPool ClientPool) *K
 		shutdown:    make(chan struct{}),
 		data:        make([]map[string]*entry, shardMap.NumShards()),
 		locks:       make([]sync.RWMutex, shardMap.NumShards()),
-		cleanupTick: time.NewTicker(1 * time.Second),
+		cleanupTick: time.NewTicker(3 * time.Second),
 		shardLock:   sync.RWMutex{},
 		heaps:       make([]EntryHeap, shardMap.NumShards()),
 	}
 
-	for i := 0; i < len(server.data); i++ {
-		server.data[i] = make(map[string]*entry)
-		server.heaps[i] = make(EntryHeap, 0)
-		heap.Init(&server.heaps[i])
-	}
+	// for i := 0; i < len(server.data); i++ {
+	// server.data[i] = make(map[string]*entry)
+	// server.heaps[i] = make(EntryHeap, 0)
+	// heap.Init(&server.heaps[i])
+	// }
 	go server.shardMapListenLoop()
 	server.handleShardMapUpdate()
 	go server.Clean()
@@ -234,7 +251,25 @@ func MakeKvServer(nodeName string, shardMap *ShardMap, clientPool ClientPool) *K
 
 func (server *KvServerImpl) Shutdown() {
 	server.shutdown <- struct{}{}
+	// server.shardLock.Lock()
+	// server.cleanupTick.Stop()
+	// logrus.Debugln("(Clean): Wiping server data")
+	// for i := range server.data {
+	// 	server.locks[i].Lock()
+	// 	server.heaps[i] = nil
+	// 	for k := range server.data[i] {
+	// 		delete(server.data[i], k)
+	// 	}
+	// 	server.data[i] = nil
+	//
+	// 	server.locks[i].Unlock()
+	// }
+	// server.shardLock.Unlock()
 	server.listener.Close()
+	// // runtime.GC()
+	// server.heaps = nil
+	// server.locks = nil
+	close(server.shutdown)
 }
 
 // NOTE: CALL WITHOUT HOLDING LOCK - input is shard, not key
@@ -263,10 +298,10 @@ func (server *KvServerImpl) Get(
 	if request.Key == "" {
 		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
 	}
-	logrus.WithFields(
-		logrus.Fields{"node": server.nodeName, "key": request.Key},
-	).Trace("node received Get() request")
-
+	// logrus.WithFields(
+	// 	logrus.Fields{"node": server.nodeName, "key": request.Key},
+	// ).Trace("node received Get() request")
+	//
 	// panic("TODO: Part A")
 
 	shard, err := server.checkShardAssignment(request.Key)
@@ -292,12 +327,13 @@ func (server *KvServerImpl) Set(
 	ctx context.Context,
 	request *proto.SetRequest,
 ) (*proto.SetResponse, error) {
+	// println("(Set) Key: ", request.Key, "; Value: ", request.Value, "; TtlMs: ", request.TtlMs)
 	if request.Key == "" {
 		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
 	}
-	logrus.WithFields(
-		logrus.Fields{"node": server.nodeName, "key": request.Key},
-	).Trace("node received Set() request")
+	// logrus.WithFields(
+	// logrus.Fields{"node": server.nodeName, "key": request.Key},
+	// ).Trace("node received Set() request")
 
 	// panic("TODO: Part A")
 
@@ -344,10 +380,10 @@ func (server *KvServerImpl) Delete(
 	if request.Key == "" {
 		return nil, status.Error(codes.InvalidArgument, "Empty key not allowed")
 	}
-	logrus.WithFields(
-		logrus.Fields{"node": server.nodeName, "key": request.Key},
-	).Trace("node received Delete() request")
-
+	// logrus.WithFields(
+	// 	logrus.Fields{"node": server.nodeName, "key": request.Key},
+	// ).Trace("node received Delete() request")
+	//
 	// panic("TODO: Part A")
 
 	shard, err := server.checkShardAssignment(request.Key)

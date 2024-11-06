@@ -9,9 +9,11 @@ Date   Started  Spent  Work Completed
 11/03  08:00PM  01:00  debugged server data races, ttl correctness, and started to investigate occasional stall(?). 
 11/04  02:30PM  02:00  wrote unit tests; updated bws26.time.log
 11/04  08:00PM  00:30  completed discussions.md
+11/05  04:00PM  01:00  attempted to debug slow value creation in TestServerTtlDataActuallyCleanedUp 
+11/06  10:00AM  01:10  profiled memory w/ pprof HeapProfile and debugged slowdown
 
                 -----
-                10:15  TOTAL time spent
+                12:25  TOTAL time spent
 
 I discussed my solution with: Anton Melnychuk, Co-pilot (nvim autocomplete)
 
@@ -26,7 +28,10 @@ to reconstruct a new mental model of the code from its "foundation" of the
 simple API. While this was initially more work, I believe that creating that
 mental model was essential for my success in passing the test cases without any
 deadlocks/data races; however, this made me ponder the inevitable future of
-working in a larger team at a company. As such, I think that for future
-projects (such as the final project), it would be best to meet with the
-team/partner to create an outline of the code and build the mental model before
-coding up the solution.  
+working in a larger team at a company. I also found debugging the slow creation of 
+large keys (values) to be especially difficult, as I had been under the previous 
+assumption that the go garbage collector would handle essentially everything. However,
+after learning the basics of the profiler, this was a relatively straightforward fix.
+As such, I think that for future projects (such as the final project), it would be 
+best to meet with the team/partner to create an outline of the code and build the 
+mental model before coding up the solution.  
