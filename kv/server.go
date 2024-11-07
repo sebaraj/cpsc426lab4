@@ -92,7 +92,7 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 			for j := 0; j < len(newKV); j++ {
 				key := newKV[j].Key
 				value := newKV[j].Value
-				ttl := uint64(newKV[j].TtlMsRemaining)
+				ttl := uint64(time.Now().UnixMilli()) + uint64(newKV[j].TtlMsRemaining)
 				// server.data[shard-1][key] = &entry{value: value, ttl: ttl}
 				newEntry := &entry{
 					key:   key,
@@ -106,6 +106,7 @@ func (server *KvServerImpl) handleShardMapUpdate() {
 			logrus.Debugln("(handleShardMapUpdate): releasing lock for shard ", shard-1)
 			server.locks[shard-1].Unlock()
 			lastErr = true
+			break
 		}
 		if !lastErr {
 			server.locks[shard-1].Lock()
@@ -349,7 +350,7 @@ func (server *KvServerImpl) Set(
 	server.locks[shard-1].Lock()
 	defer server.locks[shard-1].Unlock()
 	entry2, exists := server.data[shard-1][request.Key]
-	newTTL := uint64(time.Now().UnixMilli()) + uint64(request.TtlMs)
+	newTTL := uint64(time.Now().UnixMilli()) + uint64(request.TtlMs) // expiration timestamp
 
 	if exists {
 		// Remove the old entry from the heap
@@ -413,12 +414,15 @@ func (server *KvServerImpl) GetShardContents(
 ) (*proto.GetShardContentsResponse, error) {
 	// panic("TODO: Part C")
 
-	shard := request.Shard
+	shard := int(request.Shard)
+	if !server.isShardHosted(shard) {
+		return nil, status.Error(codes.NotFound, "Shard not hosted on this server")
+	}
 	server.locks[shard-1].RLock()
 	defer server.locks[shard-1].RUnlock()
 	kvs := make([]*proto.GetShardValue, 0)
 	for k, v := range server.data[shard-1] {
-		kvs = append(kvs, &proto.GetShardValue{Key: k, Value: v.value, TtlMsRemaining: int64(v.ttl)})
+		kvs = append(kvs, &proto.GetShardValue{Key: k, Value: v.value, TtlMsRemaining: int64(v.ttl) - int64(time.Now().UnixMilli())})
 	}
 	return &proto.GetShardContentsResponse{Values: kvs}, nil
 }

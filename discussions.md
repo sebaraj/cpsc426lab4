@@ -86,64 +86,101 @@ ShardMap: `shardmaps/test-5-node.json`
 Server Command: `scripts/run-cluster.sh shardmaps/test-5-node.json`
 
 Results:
-Command (1 second TTL): `go run cmd/stress/tester.go --shardmap shardmaps/test-5-node.json --get-qps 10 --set-qps 10 --ttl 1s`
+Command (1 second TTL): `go run cmd/stress/tester.go --shardmap shardmaps/test-5-node.json --get-qps 250 --set-qps 250 --ttl 2s`
+
 ```
-INFO[2024-11-04T20:02:08-05:00] Running Set stress test at 10 QPS
-INFO[2024-11-04T20:02:08-05:00] Running Get stress test at 10 QPS
-INFO[2024-11-04T20:02:08-05:00] [sampled] get OK key=ihsevyhicx latency_us=5838
-INFO[2024-11-04T20:02:10-05:00] [sampled] get OK key=ybyybuotcl latency_us=783
-INFO[2024-11-04T20:02:11-05:00] [sampled] get OK key=egqropssue latency_us=3273
-INFO[2024-11-04T20:02:12-05:00] [sampled] get OK key=qqldanzcnz latency_us=1357
-INFO[2024-11-04T20:02:13-05:00] [sampled] get OK key=uswctwsdyl latency_us=1703
-INFO[2024-11-04T20:02:14-05:00] [sampled] set OK key=opfqhztgvh latency_us=2487
-INFO[2024-11-04T20:02:15-05:00] [sampled] get OK key=egqropssue latency_us=2218
-INFO[2024-11-04T20:02:16-05:00] [sampled] set OK key=qinhcssnlh latency_us=2777
-INFO[2024-11-04T20:02:17-05:00] [sampled] get OK key=mppxiwnpml latency_us=4865
-INFO[2024-11-04T20:02:18-05:00] [sampled] get OK key=umutfuzisk latency_us=2916
-INFO[2024-11-04T20:02:19-05:00] [sampled] set OK key=tmrrnvjnma latency_us=3112
-INFO[2024-11-04T20:02:20-05:00] [sampled] get OK key=ncnweikcrb latency_us=1383
-INFO[2024-11-04T20:02:21-05:00] [sampled] get OK key=npvgcdrgdz latency_us=2874
-INFO[2024-11-04T20:02:22-05:00] [sampled] get OK key=punqhzdwtn latency_us=1592
-INFO[2024-11-04T20:02:23-05:00] [sampled] get OK key=jinkkxuxtq latency_us=1401
-INFO[2024-11-04T20:02:24-05:00] [sampled] set OK key=fianuqvwcj latency_us=3433
-INFO[2024-11-04T20:02:25-05:00] [sampled] get OK key=enbaoftlua latency_us=2995
+INFO[2024-11-06T20:10:57-05:00] Running Set stress test at 250 QPS
+INFO[2024-11-06T20:10:57-05:00] Running Get stress test at 250 QPS
+INFO[2024-11-06T20:10:57-05:00] [sampled] get OK                              key=bdizbldruf latency_us=3720
+INFO[2024-11-06T20:10:58-05:00] [sampled] get OK                              key=nzeajyckib latency_us=328
+INFO[2024-11-06T20:10:59-05:00] [sampled] set OK                              key=zydzroltxn latency_us=337
+INFO[2024-11-06T20:11:00-05:00] [sampled] get OK                              key=otwfekkusn latency_us=618
+INFO[2024-11-06T20:11:01-05:00] [sampled] get OK                              key=fbskjxnshc latency_us=353
+INFO[2024-11-06T20:11:02-05:00] [sampled] get OK                              key=wzkphfbskk latency_us=3328
+INFO[2024-11-06T20:11:03-05:00] [sampled] get OK                              key=npjypkkmvz latency_us=1693
+INFO[2024-11-06T20:11:04-05:00] [sampled] get OK                              key=vfobhonrci latency_us=305
+INFO[2024-11-06T20:11:05-05:00] [sampled] get OK                              key=ggumxrqcle latency_us=367
+INFO[2024-11-06T20:11:06-05:00] [sampled] get OK                              key=weryklhxky latency_us=635
+INFO[2024-11-06T20:11:07-05:00] [sampled] set OK                              key=qqutbhkfhs latency_us=374
+INFO[2024-11-06T20:11:08-05:00] [sampled] set OK                              key=viezvcsejy latency_us=730
+INFO[2024-11-06T20:11:09-05:00] [sampled] set OK                              key=utwaytbpwf latency_us=844
+INFO[2024-11-06T20:11:10-05:00] [sampled] set OK                              key=fshnojnqak latency_us=1298
+INFO[2024-11-06T20:11:11-05:00] [sampled] get OK                              key=uekewzmaqi latency_us=514
+INFO[2024-11-06T20:11:12-05:00] [sampled] get OK                              key=ezqisrjlvt latency_us=825
+INFO[2024-11-06T20:11:13-05:00] [sampled] set OK                              key=qjjzufhdso latency_us=3701
+INFO[2024-11-06T20:11:14-05:00] [sampled] set OK                              key=dnbgpgnmue latency_us=388
+INFO[2024-11-06T20:11:15-05:00] [sampled] get OK                              key=liojrxitcd latency_us=138
+INFO[2024-11-06T20:11:16-05:00] [sampled] get OK                              key=qzvttpsrue latency_us=217
+INFO[2024-11-06T20:11:17-05:00] [sampled] set OK                              key=fkaryovqvx latency_us=321
+INFO[2024-11-06T20:11:18-05:00] [sampled] get OK                              key=qjjzufhdso latency_us=206
+INFO[2024-11-06T20:11:19-05:00] [sampled] set OK                              key=baaeiqzgik latency_us=165
+INFO[2024-11-06T20:11:20-05:00] [sampled] set OK                              key=jaxudufknc latency_us=204
+INFO[2024-11-06T20:11:21-05:00] [sampled] get OK                              key=krsxzgpyuf latency_us=183
+INFO[2024-11-06T20:11:22-05:00] [sampled] get OK                              key=frkklsyksg latency_us=295
+INFO[2024-11-06T20:11:23-05:00] [sampled] set OK                              key=nwuffceovy latency_us=179
+INFO[2024-11-06T20:11:24-05:00] [sampled] set OK                              key=wkuhrirmdw latency_us=202
+INFO[2024-11-06T20:11:25-05:00] [sampled] set OK                              key=zbwsavsazy latency_us=241
+INFO[2024-11-06T20:11:26-05:00] [sampled] set OK                              key=kvntunwhhn latency_us=254
+INFO[2024-11-06T20:11:27-05:00] [sampled] get OK                              key=wxbgdtfbqn latency_us=239
+INFO[2024-11-06T20:11:28-05:00] [sampled] set OK                              key=hpqdgkhezu latency_us=4360
+INFO[2024-11-06T20:11:29-05:00] [sampled] set OK                              key=aaktbhusgx latency_us=2554
+INFO[2024-11-06T20:11:30-05:00] [sampled] get OK                              key=pchhrwumwk latency_us=277
+INFO[2024-11-06T20:11:31-05:00] [sampled] get OK                              key=cmuhgqjren latency_us=684
+INFO[2024-11-06T20:11:32-05:00] [sampled] set OK                              key=rrtepptnoi latency_us=882
+INFO[2024-11-06T20:11:33-05:00] [sampled] get OK                              key=uklexikftt latency_us=321
+INFO[2024-11-06T20:11:34-05:00] [sampled] get OK                              key=cdluxezdgd latency_us=789
+INFO[2024-11-06T20:11:35-05:00] [sampled] set OK                              key=ztwcchurmj latency_us=4152
+INFO[2024-11-06T20:11:36-05:00] [sampled] set OK                              key=oxizgjqcoy latency_us=412
+INFO[2024-11-06T20:11:37-05:00] [sampled] set OK                              key=vkcwibytvx latency_us=630
 ```
 
-Command(500 milliseconds TTL): `go run cmd/stress/tester.go --shardmap shardmaps/test-5-node.json --get-qps 10 --set-qps 10 --ttl 500ms`
+Command(500 milliseconds TTL): `go run cmd/stress/tester.go --shardmap shardmaps/test-5-node.json --get-qps 250 --set-qps 250 --ttl 500ms`
+
 ```
-INFO[2024-11-04T20:01:04-05:00] Running Get stress test at 10 QPS
-INFO[2024-11-04T20:01:04-05:00] Running Set stress test at 10 QPS
-INFO[2024-11-04T20:01:04-05:00] [sampled] get OK key=sfdtzyvoqo latency_us=6858
-INFO[2024-11-04T20:01:05-05:00] [sampled] get OK key=jdwthwirwv latency_us=3489
-INFO[2024-11-04T20:01:06-05:00] [sampled] set OK key=afiaersqnv latency_us=6618
-INFO[2024-11-04T20:01:07-05:00] [sampled] get OK key=ydxivwqcnf latency_us=1513
-INFO[2024-11-04T20:01:08-05:00] [sampled] set OK key=koqkcpqeze latency_us=1823
-INFO[2024-11-04T20:01:09-05:00] [sampled] set OK key=muwuqaoxub latency_us=2223
-INFO[2024-11-04T20:01:10-05:00] [sampled] set OK key=vnayjmeuza latency_us=4770
-INFO[2024-11-04T20:01:12-05:00] [sampled] get OK key=jazyjgpllc latency_us=3418
-INFO[2024-11-04T20:01:13-05:00] [sampled] set OK key=yjnlqrblmz latency_us=3926
-INFO[2024-11-04T20:01:14-05:00] [sampled] get OK key=nsjocdlnhv latency_us=1450
-INFO[2024-11-04T20:01:15-05:00] [sampled] get OK key=wpwrugdfsz latency_us=1863
-INFO[2024-11-04T20:01:16-05:00] [sampled] get OK key=qmfyxkqxlq latency_us=2589
-INFO[2024-11-04T20:01:17-05:00] [sampled] get OK key=pfjlpnemep latency_us=1971
-INFO[2024-11-04T20:01:18-05:00] [sampled] get OK key=zancgtkfdy latency_us=2659
-INFO[2024-11-04T20:01:19-05:00] [sampled] get OK key=vtrpkutlxj latency_us=2146
-INFO[2024-11-04T20:01:20-05:00] [sampled] set OK key=ojnkkljsrn latency_us=3372
-INFO[2024-11-04T20:01:21-05:00] [sampled] get OK key=tpauvxnhob latency_us=1859
-INFO[2024-11-04T20:01:22-05:00] [sampled] set OK key=btbdxjvfaw latency_us=4112
-INFO[2024-11-04T20:01:23-05:00] [sampled] get OK key=ncnlmeiarz latency_us=1761
+INFO[2024-11-06T20:11:49-05:00] Running Set stress test at 250 QPS
+INFO[2024-11-06T20:11:49-05:00] Running Get stress test at 250 QPS
+INFO[2024-11-06T20:11:49-05:00] [sampled] get OK                              key=vhcywuroms latency_us=6009
+INFO[2024-11-06T20:11:50-05:00] [sampled] set OK                              key=errjsrizwb latency_us=274
+INFO[2024-11-06T20:11:51-05:00] [sampled] get OK                              key=eiqaknbqli latency_us=182
+INFO[2024-11-06T20:11:52-05:00] [sampled] get OK                              key=dvxekojfoj latency_us=305
+INFO[2024-11-06T20:11:53-05:00] [sampled] set OK                              key=funsptfemw latency_us=285
+INFO[2024-11-06T20:11:54-05:00] [sampled] get OK                              key=kjflktuuhl latency_us=351
+INFO[2024-11-06T20:11:55-05:00] [sampled] get OK                              key=devfcutlbi latency_us=284
+INFO[2024-11-06T20:11:56-05:00] [sampled] set OK                              key=ilszxgnnsy latency_us=364
+INFO[2024-11-06T20:11:57-05:00] [sampled] get OK                              key=slxksnnrai latency_us=226
+INFO[2024-11-06T20:11:58-05:00] [sampled] get OK                              key=ztmkopztes latency_us=583
+INFO[2024-11-06T20:11:59-05:00] [sampled] get OK                              key=oiyioqihts latency_us=279
+INFO[2024-11-06T20:12:00-05:00] [sampled] get OK                              key=gglhwrnbdo latency_us=185
+INFO[2024-11-06T20:12:01-05:00] [sampled] set OK                              key=oxzrillmak latency_us=313
+INFO[2024-11-06T20:12:02-05:00] [sampled] get OK                              key=swjrusieis latency_us=350
+INFO[2024-11-06T20:12:03-05:00] [sampled] get OK                              key=uzgsxyyswc latency_us=279
+INFO[2024-11-06T20:12:04-05:00] [sampled] get OK                              key=jlehaiapnb latency_us=531
+INFO[2024-11-06T20:12:05-05:00] [sampled] get OK                              key=wwzarpppyz latency_us=201
+INFO[2024-11-06T20:12:06-05:00] [sampled] get OK                              key=klpqptsids latency_us=508
+INFO[2024-11-06T20:12:07-05:00] [sampled] get OK                              key=kqsrcpdkjc latency_us=647
+INFO[2024-11-06T20:12:08-05:00] [sampled] set OK                              key=qppnmvgsce latency_us=7750
+INFO[2024-11-06T20:12:09-05:00] [sampled] set OK                              key=ghtzoghbpi latency_us=1518
+INFO[2024-11-06T20:12:10-05:00] [sampled] get OK                              key=hkzqlnvjsy latency_us=1429
+INFO[2024-11-06T20:12:11-05:00] [sampled] get OK                              key=qgmqroyasp latency_us=915
+INFO[2024-11-06T20:12:12-05:00] [sampled] get OK                              key=tjzyzbfngz latency_us=2525
+INFO[2024-11-06T20:12:13-05:00] [sampled] get OK                              key=wvlggktzev latency_us=9320
+INFO[2024-11-06T20:12:14-05:00] [sampled] set OK                              key=nhgkxiezcb latency_us=5167
+INFO[2024-11-06T20:12:15-05:00] [sampled] get OK                              key=exzwvsmeya latency_us=10296
+INFO[2024-11-06T20:12:16-05:00] [sampled] get OK                              key=gpvfwdmflp latency_us=1023
+INFO[2024-11-06T20:12:17-05:00] [sampled] get OK                              key=vrvqxnumiz latency_us=1332
+INFO[2024-11-06T20:12:18-05:00] [sampled] get OK                              key=vbtkrefjqm latency_us=1746
 ```
 
 Conclusion:
 
 After running the two experiments, the results "show" (this is no where enough data to conclude, by
-eye-balling) that the TTL strategy is working as expected, where the longer TTLs reduce the observed
+eye-balling the largest latency spikes) that the TTL strategy is working as expected, where the longer TTLs reduce the observed
 latency, as the server is not "wasting" time deleting expired entries.
 
 #### Experiment #2
 
-In this experiment, we'll test how the system performs when shards are dynamically migrated between 
-nodes during operation aka Part C. This will simulate real-world scenarios where load balancing or 
+In this experiment, we'll test how the system performs when shards are dynamically migrated between
+nodes during operation aka Part C. This will simulate real-world scenarios where load balancing or
 node failures might require shard redistribution, showing load balancing statefulness.
 
 Initial ShardMap: `shardmaps/initial-4-node.json` <br>
@@ -151,6 +188,7 @@ Migrated ShardMap: `shardmaps/migrated-4-node.json`
 
 Results:
 Command: `scripts/run-cluster.sh shardmaps/initial-4-node.json`
+
 ```
 INFO[2024-11-05T01:24:38-05:00] Running Set stress test at 10 QPS
 INFO[2024-11-05T01:24:38-05:00] Running Get stress test at 10 QPS
@@ -186,6 +224,7 @@ INFO[2024-11-05T01:25:08-05:00] [sampled] set OK                              ke
 ```
 
 Dynamically updated to: `migrated-4-node.json`
+
 ```
 INFO[2024-11-05T01:25:09-05:00] [sampled] get OK                              key=znxkrlydta latency_us=2612
 INFO[2024-11-05T01:25:10-05:00] [sampled] get OK                              key=iwghlgozlc latency_us=539
@@ -224,10 +263,11 @@ The consistency over resuts shows that the application maintains its state corre
 
 #### Experiment 3
 
-In this test I aim to evaluate the efficiency of read locking in our distributed key-value store, particularly 
+In this test I aim to evaluate the efficiency of read locking in our distributed key-value store, particularly
 its ability to handle concurrent read operations while write operations are in progress.
 
 Command1: `go run cmd/stress/tester.go --shardmap shardmaps/test-5-node.json --get-qps 200 --set-qps 10 --ttl 30s --duration 30s`
+
 ```
 INFO[2024-11-05T01:43:40-05:00] Running Set stress test at 10 QPS
 INFO[2024-11-05T01:43:40-05:00] Running Get stress test at 200 QPS
@@ -264,6 +304,7 @@ INFO[2024-11-05T01:44:09-05:00] [sampled] get OK                              ke
 ```
 
 Command2: `go run cmd/stress/tester.go --shardmap shardmaps/test-5-node.json --get-qps 10 --set-qps 50 --ttl 30s --duration 30s`
+
 ```
 INFO[2024-11-05T01:43:40-05:00] Running Set stress test at 50 QPS
 INFO[2024-11-05T01:43:40-05:00] Running Get stress test at 10 QPS
@@ -302,13 +343,13 @@ INFO[2024-11-05T01:44:09-05:00] [sampled] set OK                              ke
 Conclusion:
 
 **Read-heavy workload (200 GET QPS, 10 SET QPS):** <br>
-    GET latencies: 342μs to 3561μs <br>
+GET latencies: 342μs to 3561μs <br>
 
 **Write-heavy workload (10 GET QPS, 50 SET QPS):** <br>
-    SET latencies: 241μs to 2186μs <br>
-    GET latencies: 586μs to 12044μs <br>
+SET latencies: 241μs to 2186μs <br>
+GET latencies: 586μs to 12044μs <br>
 
 In the read-heavy workload, we observe low average GET latency (~768μs) despite high read concurrency (200 QPS).
-On the other hand, the write-heavy workload shows that write operations (SET) don't significantly impact read 
-performance. While GET latencies are higher in this scenario, they remain reasonable given the write-intensive 
+On the other hand, the write-heavy workload shows that write operations (SET) don't significantly impact read
+performance. While GET latencies are higher in this scenario, they remain reasonable given the write-intensive
 environment. Note, the system maintains high throughput and low latency even under increased load.
